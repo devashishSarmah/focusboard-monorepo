@@ -1,5 +1,10 @@
 name: Publish Docker Images
 
+# Grant minimal necessary permissions
+permissions:
+  contents: read # to checkout code
+  packages: write # to push images to GHCR
+
 on:
   push:
     branches: [main]
@@ -9,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set lowercase owner
-        # This uses bash parameter expansion to lowercase GITHUB_REPOSITORY_OWNER
         run: |
           echo "OWNER=$(echo ${GITHUB_REPOSITORY_OWNER} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
