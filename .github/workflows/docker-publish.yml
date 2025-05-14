@@ -9,10 +9,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up QEMU (for multi-arch builds)
+      - name: Set lowercase owner
+        # This uses bash parameter expansion to lowercase GITHUB_REPOSITORY_OWNER
+        run: |
+          echo "OWNER=$(echo ${GITHUB_REPOSITORY_OWNER} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
@@ -32,7 +36,7 @@ jobs:
           file: focusboard-api/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/focusboard-api:latest
+          tags: ghcr.io/${{ env.OWNER }}/focusboard-api:latest
 
       - name: Build & push UI image
         uses: docker/build-push-action@v4
@@ -41,4 +45,4 @@ jobs:
           file: focusboard-ui/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/focusboard-ui:latest
+          tags: ghcr.io/${{ env.OWNER }}/focusboard-ui:latest
