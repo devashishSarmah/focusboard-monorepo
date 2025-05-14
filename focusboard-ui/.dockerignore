@@ -1,0 +1,4 @@
+# ignore host modules and build artifacts
+node_modules
+dist
+.git

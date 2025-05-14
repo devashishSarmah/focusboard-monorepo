@@ -1,0 +1,65 @@
+name: CI & Docker Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: focusboard
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── Test & Build API ────────────────────────────────────────────────
+      - name: Setup Node.js for API
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+      - name: Install & Test API
+        working-directory: focusboard-api
+        run: |
+          npm ci
+          npm test
+      - name: Build API Docker image
+        run: |
+          docker build \
+            --file focusboard-api/Dockerfile \
+            --tag focusboard-api:ci-build \
+            focusboard-api
+
+      # ── Test & Build UI ─────────────────────────────────────────────────
+      - name: Setup Node.js for UI
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+      - name: Install & Test UI
+        working-directory: focusboard-ui
+        run: |
+          npm ci
+          npm test
+      - name: Build UI Docker image
+        run: |
+          docker build \
+            --file focusboard-ui/Dockerfile \
+            --tag focusboard-ui:ci-build \
+            focusboard-ui

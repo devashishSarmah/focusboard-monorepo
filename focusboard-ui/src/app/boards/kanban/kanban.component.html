@@ -1,0 +1,26 @@
+<div class="board">
+  <ng-container *ngFor="let col of columns">
+    <h3>{{ col.label }} ({{ tasksByStatus[col.status]?.length || 0 }})</h3>
+    <div
+      cdkDropList
+      [id]="col.status"
+      [cdkDropListData]="tasksByStatus[col.status]"
+      [cdkDropListConnectedTo]="statusMap"
+      class="column"
+      (cdkDropListDropped)="onDrop($event)"
+    >
+      <div
+        *ngFor="let task of tasksByStatus[col.status]"
+        cdkDrag
+        [cdkDragData]="task"
+        class="card"
+      >
+        {{ task.title }}
+      </div>
+    </div>
+  </ng-container>
+</div>
+<div class="new-task">
+  <input [(ngModel)]="newTitle" placeholder="New task…" />
+  <button (click)="add()">Add</button>
+</div>

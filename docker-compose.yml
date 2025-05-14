@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: focusboard
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  api:
+    build: ./focusboard-api
+    env_file: ./focusboard-api/.env # DATABASE_URL=postgres://devashishSarmah@db:5432/focusboard
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+
+  ui:
+    build: ./focusboard-ui
+    depends_on:
+      - api
+    ports:
+      - "4200:80"
+
+volumes:
+  db-data:
