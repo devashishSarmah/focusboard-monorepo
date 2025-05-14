@@ -54,11 +54,14 @@ jobs:
           node-version: 20
           cache: "npm"
           cache-dependency-path: focusboard-ui/package-lock.json
+
+      - name: Install Chromium for headless tests
+        run: sudo apt-get update && sudo apt-get install -y chromium-browser
       - name: Install & Test UI
         working-directory: focusboard-ui
         run: |
           npm ci
-          npm test
+          npm test -- --browsers=ChromeHeadless --watch=false
       - name: Build UI Docker image
         run: |
           docker build \
