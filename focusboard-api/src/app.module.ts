@@ -4,6 +4,8 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TasksModule } from './tasks/tasks.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-store';
 
 @Module({
   imports: [
@@ -19,6 +21,17 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         // Picked up automatically: *.entity.ts
         autoLoadEntities: true,
       }),
+    }),
+    CacheModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (cfg: ConfigService) => ({
+        store: redisStore,
+        host: cfg.get('REDIS_HOST'),
+        port: cfg.get<number>('REDIS_PORT'),
+        ttl: cfg.get<number>('CACHE_TTL'),
+      }),
+      isGlobal: true,
     }),
     TasksModule,
   ],

@@ -9,11 +9,17 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
   api:
     build: ./focusboard-api
     env_file: ./focusboard-api/.env # DATABASE_URL=postgres://devashishSarmah@db:5432/focusboard
     depends_on:
       - db
+      - redis
     ports:
       - "3000:3000"
 
