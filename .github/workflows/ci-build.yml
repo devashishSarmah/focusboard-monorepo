@@ -91,6 +91,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Build API image
+        run: |
+          docker build -t focusboard-api:ci-build ./focusboard-api
+      - name: Build UI image
+        run: |
+          docker build -t focusboard-ui:ci-build ./focusboard-ui
+
       - name: Wait for DB
         run: |
           until docker run --network host postgres:16 pg_isready -h localhost -p 5432; do
