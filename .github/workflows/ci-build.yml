@@ -35,11 +35,13 @@ jobs:
           node-version: 20
           cache: "npm"
           cache-dependency-path: focusboard-api/package-lock.json
+
       - name: Install & Test API
         working-directory: focusboard-api
         run: |
           npm ci
           npm test
+
       - name: Build API Docker image
         run: |
           docker build \
@@ -57,11 +59,13 @@ jobs:
 
       - name: Install Chromium for headless tests
         run: sudo apt-get update && sudo apt-get install -y chromium-browser
+
       - name: Install & Test UI
         working-directory: focusboard-ui
         run: |
           npm ci
           npm test -- --browsers=ChromeHeadless --watch=false
+
       - name: Build UI Docker image
         run: |
           docker build \
@@ -72,50 +76,37 @@ jobs:
   e2e:
     needs: test-and-build
     runs-on: ubuntu-latest
-    services:
-      db:
-        image: postgres:16
-        env:
-          POSTGRES_DB: focusboard
-          POSTGRES_HOST_AUTH_METHOD: trust
-        ports: [5432:5432]
-      api:
-        image: focusboard-api:ci-build
-        env:
-          DATABASE_URL: postgres://postgres@db:5432/focusboard
-        ports: [3000:3000]
-      ui:
-        image: focusboard-ui:ci-build
-        ports: [4200:80]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Build API image
-        run: |
-          docker build -t focusboard-api:ci-build ./focusboard-api
-      - name: Build UI image
-        run: |
-          docker build -t focusboard-ui:ci-build ./focusboard-ui
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-      - name: Wait for DB
+      - name: Build & start full stack with Compose
         run: |
-          until docker run --network host postgres:16 pg_isready -h localhost -p 5432; do
+          docker compose build
+          docker compose up -d
+
+      - name: Wait for Postgres
+        run: |
+          until docker exec $(docker ps -qf "ancestor=postgres:16") pg_isready -U postgres; do
             sleep 1
           done
 
       - name: Wait for API
         run: |
           n=0
-          until curl -sSf http://localhost:3000/health || [ $n -gt 20 ]; do
-            ((n++)); sleep 1
+          until curl -sSf http://localhost:3000/tasks || (( n++ > 20 )); do
+            sleep 3
           done
 
       - name: Wait for UI
         run: |
           n=0
-          until curl -sSf http://localhost:4200 || [ $n -gt 20 ]; do
-            ((n++)); sleep 1
+          until curl -sSf http://localhost:4200 || (( n++ > 20 )); do
+            sleep 3
           done
 
       - name: Run Cypress E2E
@@ -123,3 +114,7 @@ jobs:
         run: |
           npm ci
           npx cypress run --browser chrome --headless
+
+      - name: Tear down Compose
+        if: always()
+        run: docker compose down -v
