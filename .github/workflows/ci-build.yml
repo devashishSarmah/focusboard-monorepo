@@ -68,3 +68,51 @@ jobs:
             --file focusboard-ui/Dockerfile \
             --tag focusboard-ui:ci-build \
             focusboard-ui
+
+  e2e:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_DB: focusboard
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: [5432:5432]
+      api:
+        image: focusboard-api:ci-build
+        env:
+          DATABASE_URL: postgres://postgres@db:5432/focusboard
+        ports: [3000:3000]
+      ui:
+        image: focusboard-ui:ci-build
+        ports: [4200:80]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for DB
+        run: |
+          until docker run --network host postgres:16 pg_isready -h localhost -p 5432; do
+            sleep 1
+          done
+
+      - name: Wait for API
+        run: |
+          n=0
+          until curl -sSf http://localhost:3000/health || [ $n -gt 20 ]; do
+            ((n++)); sleep 1
+          done
+
+      - name: Wait for UI
+        run: |
+          n=0
+          until curl -sSf http://localhost:4200 || [ $n -gt 20 ]; do
+            ((n++)); sleep 1
+          done
+
+      - name: Run Cypress E2E
+        working-directory: focusboard-ui
+        run: |
+          npm ci
+          npx cypress run --browser chrome --headless
