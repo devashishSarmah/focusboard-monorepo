@@ -6,6 +6,8 @@ import { TasksModule } from './tasks/tasks.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
+import { HealthModule } from './health/health.module';
+import { TerminusModule } from '@nestjs/terminus';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { redisStore } from 'cache-manager-redis-store';
       isGlobal: true,
     }),
     TasksModule,
+    TerminusModule.forRoot(),
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
